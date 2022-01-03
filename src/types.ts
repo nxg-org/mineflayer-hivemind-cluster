@@ -2,17 +2,13 @@ import { Serializable } from "child_process"
 import { HiveBehavior } from "./HiveMindStates"
 
 
-export type HostToWorkerSubjects = "init" | "createBot" | "enterState" | "exitState" | "disableState"
-export type HostToWorkerBodyTypes = "allStatesInfo" | "botInfo" | "stateInfo"
+export type HostToWorkerSubjects = "init" | "createBot" | "enterState" | "exitState" | "disableState" | "evalTransition"
+export type HostToWorkerBodyTypes = "allStatesInfo" | "botInfo" | "stateInfo" | "transitionInfo"
 
 
-export type StateInfoData = {
-    name: string
-}
 
-
-export type WorkerToHostSubjects = "botSpawned" | "stateEnded" | "createWorker"
-export type WorkerToHostBodyTypes = "stateEndedInfo" | "fuck"
+export type WorkerToHostSubjects = "botSpawned" | "stateEnded" | "createWorker" | "transitionEvaluated"
+export type WorkerToHostBodyTypes = "stateEndedInfo" | "transitionEvaluation" | "fuck"
 
 
 

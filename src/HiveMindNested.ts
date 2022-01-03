@@ -24,11 +24,20 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
     readonly enter: typeof HiveBehavior;
     readonly exit?: typeof HiveBehavior;
     readonly runningStates: { [behaviorName: string]: ChildProcess[] };
+    private checking: { [index: number]: boolean };
     activeStateType?: typeof HiveBehavior;
-    active: boolean
+    active: boolean;
     depth: number;
 
-    constructor({ processes, transitions, enter, exit, stateName = "nestedHiveMind", autonomous = false, ignoreBusy = false }: NestedHiveMindOptions) {
+    constructor({
+        processes,
+        transitions,
+        enter,
+        exit,
+        stateName = "nestedHiveMind",
+        autonomous = false,
+        ignoreBusy = false,
+    }: NestedHiveMindOptions) {
         super();
         this.autonomous = autonomous;
         this.ignoreBusy = ignoreBusy;
@@ -41,24 +50,46 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         this.runningStates = {};
         this.active = false;
         this.depth = 0;
-        
+        this.checking = {};
+
         this.processes.forEach((p) => {
             p.on("message", (data) => {
                 const msg = data as WorkerToHostDataFormat;
                 switch (msg.subject) {
-                    case "botSpawned":
-                        break;
-                    case "createWorker":
-                        break;
                     case "stateEnded":
                         if (msg.body?.kind === "stateEndedInfo") this.stateEndedHandler(p, msg.body.data);
                         break;
-                    default:
-                        throw "Invalid subject.";
                 }
             });
         });
     }
+
+    // private processTransition(process: ChildProcess, transition: HiveTransition) {
+    //     const str = transition.shouldTransition.toString();
+    //     process.send({
+    //         subject: "evalTransition",
+    //         body: {
+    //             kind: "transitionInfo",
+    //             data: { parentName: transition.parentState.name, childName: transition.childState.name, function: str },
+    //         },
+    //     } as HostToWorkerDataFormat);
+
+    //     const index = this.transitions.indexOf(transition);
+    //     if (!this.checking[index])
+    //         process.on("message", (message) => {
+    //             const msg = message as WorkerToHostDataFormat;
+    //             if (msg.subject === "transitionEvaluated") {
+    //                 const parentStr = (msg.body?.data as any).parentName;
+    //                 const childStr = (msg.body?.data as any).childName;
+    //                 const res = (msg.body?.data as any).result;
+    //                 if (parentStr === transition.parentState.name && childStr === transition.childState.name) {
+    //                     if (res) transition.trigger();
+    //                 }
+    //                 this.checking[index] = false;
+    //             }
+    //         });
+    //     this.checking[index] = true;
+    // }
 
     private findStates(): typeof HiveBehavior[] {
         const states = [];
@@ -86,13 +117,13 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
 
     private getUsableBots(): ChildProcess[] {
         const usable = [];
-        let fuck = 0
+        let fuck = 0;
         for (const process of this.processes) {
             for (const state in this.runningStates) {
                 if (this.activeStateType?.stateName === state || this.runningStates[state].includes(process)) {
-                    fuck++
+                    fuck++;
                     break;
-                };
+                }
             }
             if (fuck === 0) usable.push(process);
             fuck = 0;
@@ -121,17 +152,20 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         this.emit("stateChanged");
     }
 
-    private stateEndedHandler = (process: ChildProcess, msg: Serializable) => {
-        const transition = this.transitions.find(t => t.parentState.name === msg)
-        if (!transition) throw "fuck"
-        console.log(this.activeStateType?.name, msg, transition.isTriggered(), transition.shouldTransition())
-        if ((this.activeStateType?.name === msg && (!transition.isTriggered() && !transition.shouldTransition()))) return;
-        const processes = this.runningStates[msg as string]
-        if (!processes) throw "Invalid state."
-        const index = processes.indexOf(process)
-        if (index > -1) this.runningStates[msg as string].splice(index, 1)[0].send({ subject: "exitState" } as HostToWorkerDataFormat)
-
+    private stateEndedHandler = async (process: ChildProcess, msg: Serializable) => {
+        const transition = this.transitions.find((t) => t.parentState.name === msg);
+        if (!transition) throw "fuck";
+        // console.log(this.activeStateType?.name, msg, transition.isTriggered());
+        if (this.activeStateType?.name === msg && !transition.isTriggered()) return;
+        const processes = this.runningStates[msg as string];
+        if (!processes) throw "Invalid state.";
+        const index = processes.indexOf(process);
+        if (index > -1) this.runningStates[msg as string].splice(index, 1)[0].send({ subject: "exitState" } as HostToWorkerDataFormat);
     };
+
+    // private async checkActiveTransition(transition: HiveTransition) {
+    //     await Promise.all(this.processes.map(async (p) => await this.processTransition(p, transition)));
+    // }
 
     public onStateEntered(): void {
         this.activeStateType = this.enter;
@@ -145,13 +179,14 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         this.activeStateType = undefined;
     }
 
-    public update(): void {
+    public async update(): Promise<void> {
         for (let i = 0; i < this.transitions.length; i++) {
             const transition = this.transitions[i];
             if (transition.parentState === this.activeStateType) {
+                // await this.checkActiveTransition(transition);
                 if (transition.isTriggered() || transition.shouldTransition()) {
                     transition.resetTrigger();
-                   
+
                     if (transition.parentState.autonomous) {
                         transition.onTransition();
                         this.activeStateType = transition.childState;
@@ -178,6 +213,4 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
 
         return this.activeStateType === this.exit;
     }
-
-
 }

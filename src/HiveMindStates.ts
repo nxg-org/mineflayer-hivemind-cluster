@@ -57,6 +57,7 @@ export interface HiveTransitionParameters {
 export class HiveTransition {
     readonly parentState: typeof HiveBehavior;
     readonly childState: typeof HiveBehavior;
+    readonly shouldTransitionStringified: string
     private triggerState: boolean = false;
     shouldTransition: () => boolean;
     onTransition: () => void;
@@ -65,6 +66,7 @@ export class HiveTransition {
     constructor({ parent, child, name, shouldTransition = () => false, onTransition = () => {} }: HiveTransitionParameters) {
         this.parentState = parent;
         this.childState = child;
+        this.shouldTransitionStringified = shouldTransition.toString();
         this.shouldTransition = shouldTransition;
         this.onTransition = onTransition;
         this.name = name;

@@ -1,26 +1,25 @@
-import { fork } from "child_process";
+import { ChildProcess, fork } from "child_process";
 import path from "path";
 import { HostToWorkerBodyTypes, HostToWorkerDataFormat } from "./types";
 import cpu from "os";
 import { CentralHiveMind } from "./HiveMindCentral";
 import { HiveTransition } from "./HiveMindStates";
-import {BehaviorBowEntity, BehaviorFollowEntity, BehaviorIdle, BehaviorLookAtEntity} from "./behaviors"
+import { BehaviorBowEntity, BehaviorFollowEntity, BehaviorIdle, BehaviorLookAtEntity, BehaviorSwordEntity } from "./behaviors";
 import { NestedHiveMind } from "./HiveMindNested";
 import { promisify } from "util";
 import { createInterface } from "readline";
-import { createBot } from "mineflayer";
+import { Bot, createBot } from "mineflayer";
+import { Entity } from "prismarine-entity";
 
-const sleep = promisify(setTimeout)
+const sleep = promisify(setTimeout);
 
 const debug = true;
 
 const controller = new AbortController();
-const processes = [];
+const processes: ChildProcess[] = [];
 const { signal } = controller;
 
-const leader = createBot({ username: `test_gen0`, host: "localhost", version: "1.17.1" })
-
-
+const leader = createBot({ username: `test_gen0`, host: "localhost", version: "1.17.1" });
 
 for (let i = 1; i <= cpu.cpus().length - 4; i++) {
     const child = fork(path.join(path.dirname(__filename), "botProcess.js"), { signal });
@@ -36,7 +35,52 @@ let rl = createInterface({
     output: process.stdout,
 });
 
+let target: Entity | undefined;
+leader.on("physicsTick", () => {
+    target = leader.nearestEntity((e) => e.type === "player" && !e.username?.includes("test")) as any;
+});
 
+let childTransitions = [
+    new HiveTransition({
+        parent: BehaviorIdle,
+        child: BehaviorSwordEntity,
+        name: "idleToSword",
+    }),
+
+    new HiveTransition({
+        parent: BehaviorSwordEntity,
+        child: BehaviorBowEntity,
+        name: "swordToBow",
+    }),
+
+    new HiveTransition({
+        parent: BehaviorBowEntity,
+        child: BehaviorSwordEntity,
+        name: "bowToSword",
+    }),
+
+    new HiveTransition({
+        parent: BehaviorBowEntity,
+        child: BehaviorIdle,
+        name: "bowToIdle",
+    }),
+
+    new HiveTransition({
+        parent: BehaviorSwordEntity,
+        child: BehaviorIdle,
+        name: "swordToIdle",
+    }),
+];
+
+let childMachine = new NestedHiveMind({
+    processes,
+    transitions: childTransitions,
+    enter: BehaviorIdle,
+    exit: BehaviorIdle,
+    stateName: "childNested",
+    autonomous: false,
+    ignoreBusy: false,
+});
 
 let transitions = [
     new HiveTransition({
@@ -61,6 +105,11 @@ let transitions = [
         child: BehaviorIdle,
         name: "lookToIdle",
     }),
+
+    // new HiveTransition({
+    //     parent: BehaviorIdle,
+    //     child: childMachine
+    // })
 ];
 
 let test = new NestedHiveMind({
@@ -72,13 +121,14 @@ let test = new NestedHiveMind({
     transitions: transitions,
 });
 
+let hiveMind: CentralHiveMind;
+(async () => {
+    await sleep(3000);
+    hiveMind = new CentralHiveMind(processes, childMachine);
+})();
 
-console.log(processes.length)
-const hiveMind = new CentralHiveMind(processes, test)
 // const webserver = new HiveMindWebserver(hiveMind);
 // webserver.startServer();
-
-
 
 leader.on("chat", (username, message: string) => {
     const split = message.split(" ");
@@ -86,7 +136,7 @@ leader.on("chat", (username, message: string) => {
         case "come":
             hiveMind!.root.transitions[0].trigger();
             break;
-        case "movestop":
+        case "bow":
             hiveMind!.root.transitions[1].trigger();
             break;
         case "look":
@@ -94,6 +144,9 @@ leader.on("chat", (username, message: string) => {
             break;
         case "lookstop":
             hiveMind!.root.transitions[3].trigger();
+            break;
+        default:
+            hiveMind!.root.transitions.find(t => t.name === split[0])?.trigger();
             break;
     }
 });
@@ -105,16 +158,14 @@ async function report() {
             for (const key of Object.keys(hiveMind.root.runningStates)) {
                 console.log(key, hiveMind.root.runningStates[key].length);
             }
-            console.log(hiveMind.activeBots.length)
+            console.log(hiveMind.activeBots.length);
         }
 
         await sleep(1000);
     }
 }
 
-// report();
-
-
+report();
 
 // child.send({
 //     subject: "createBot",
