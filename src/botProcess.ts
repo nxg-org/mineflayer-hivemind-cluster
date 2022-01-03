@@ -52,8 +52,11 @@ process.on('message', async (message) => {
                 stateType = found;
                 state.active = true;
                 state.onStateEntered?.();
-                waitingToBeStopped[found.name] = true
-                eventuallyHalt(found.name)
+                if (stateType.autonomous) {
+                    waitingToBeStopped[found.name] = true
+                    eventuallyHalt(found.name)
+                }
+ 
 
             }
             break;
@@ -61,7 +64,10 @@ process.on('message', async (message) => {
             if (!state.active) return;
             state.onStateExited?.();
             state.active = false;
-            waitingToBeStopped[stateType.name] = false
+            if (stateType.autonomous) {
+                waitingToBeStopped[stateType.name] = false
+            }
+
 
             break
 

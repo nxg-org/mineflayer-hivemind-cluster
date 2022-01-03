@@ -122,14 +122,14 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
     }
 
     private stateEndedHandler = (process: ChildProcess, msg: Serializable) => {
-        const transition = this.transitions.find(t => t.parentState === this.activeStateType)
+        const transition = this.transitions.find(t => t.parentState.name === msg)
         if (!transition) throw "fuck"
-        if (this.activeStateType?.name === msg && (!transition.isTriggered() && !transition.shouldTransition())) return;
+        console.log(this.activeStateType?.name, msg, transition.isTriggered(), transition.shouldTransition())
+        if ((this.activeStateType?.name === msg && (!transition.isTriggered() && !transition.shouldTransition()))) return;
         const processes = this.runningStates[msg as string]
         if (!processes) throw "Invalid state."
         const index = processes.indexOf(process)
-        if (index > -1) this.runningStates[msg as string].splice(index, 1)
-        process.send({ subject: "exitState" } as HostToWorkerDataFormat)
+        if (index > -1) this.runningStates[msg as string].splice(index, 1)[0].send({ subject: "exitState" } as HostToWorkerDataFormat)
 
     };
 
