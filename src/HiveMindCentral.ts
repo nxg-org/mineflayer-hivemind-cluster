@@ -2,12 +2,15 @@ import EventEmitter from "events";
 import { Bot } from "mineflayer";
 import { NestedHiveMind } from "./HiveMindNested";
 import { HiveBehavior, HiveTransition } from "./HiveMindStates";
+import { ChildProcess } from "child_process";
+import { promisify } from "util";
+const sleep = promisify(setTimeout)
 
 export class CentralHiveMind extends EventEmitter {
-    readonly bots: Bot[];
+    readonly bots: ChildProcess[];
 
-    readonly activeBots: Bot[]; //{[hivemindName: string]: Bot[]}
-    readonly droppedBots: Bot[];
+    readonly activeBots: ChildProcess[]; //{[hivemindName: string]: Bot[]}
+    readonly droppedBots: ChildProcess[];
 
     readonly root: NestedHiveMind;
 
@@ -15,7 +18,7 @@ export class CentralHiveMind extends EventEmitter {
     readonly states: typeof HiveBehavior[];
     readonly nestedHives: NestedHiveMind[];
 
-    constructor(bots: Bot[], root: NestedHiveMind) {
+    constructor(bots: ChildProcess[], root: NestedHiveMind) {
         super();
         this.bots = bots;
         this.root = root;
@@ -30,65 +33,13 @@ export class CentralHiveMind extends EventEmitter {
         this.findNestedHiveMinds(this.root);
 
         //lazy right now. implementing later.
-        this.bots[0].on("physicsTick", () => this.update());
+        // this.bots[0].on("physicsTick", () => this.update());
+
+        this.lazyHandler()
 
         this.root.active = true;
         this.root.onStateEntered();
     }
-
-    public removeBots(bots: Bot[], override: boolean = false) {
-        for (const bot of bots) {
-            const index = this.bots.indexOf(bot);
-            if (index > -1) this.bots.splice(index, 1);
-            for (const mind of this.nestedHives) {
-                if (mind.autonomous && !override) continue;
-                const index = mind.bots.indexOf(bot);
-                if (index > -1) mind.bots.splice(index, 1);
-            }
-
-            if (!this.droppedBots.includes(bot)) this.droppedBots.push(bot)
-        }
-    }
-
-    public removeBotsFrom(hiveName: string, ...bots: Bot[]) {
-        for (const mind of this.nestedHives) {
-            if (mind.stateName === hiveName) {
-                for (const bot of bots) {
-                    const index = mind.bots.indexOf(bot);
-                    if (index > -1) mind.bots.splice(index, 1);
-                    if (!this.droppedBots.includes(bot)) this.droppedBots.push(bot)
-                }
-            }
-        }
-
-        
-    }
-
-    public addBots(...bots: Bot[]) {
-        for (const bot of bots) {
-            if (!this.bots.includes(bot)) this.bots.push(bot);
-            for (const mind of this.nestedHives) {
-                if (mind.autonomous) continue;
-                if (!mind.bots.includes(bot)) this.bots.push(bot);
-            }
-
-            const index = this.droppedBots.indexOf(bot);
-            if (index > -1) this.droppedBots.splice(index, 1);
-        }
-    }
-
-    public addBotsTo(hiveName: string, ...bots: Bot[]) {
-        for (const mind of this.nestedHives) {
-            if (mind.stateName === hiveName) {
-                for (const bot of bots) {
-                    if (!mind.bots.includes(bot)) this.bots.push(bot);
-                    const index = this.droppedBots.indexOf(bot);
-                    if (index > -1) this.droppedBots.splice(index, 1);
-                }
-            }
-        }
-    }
-
 
 
     private findNestedHiveMinds(nested: NestedHiveMind, depth: number = 0): void {
@@ -128,18 +79,20 @@ export class CentralHiveMind extends EventEmitter {
         }
     }
 
+
+    private async lazyHandler() {
+        while (true) {
+            this.update()
+            await sleep(50)
+
+        }
+    }
+
     /**
      * Called each tick to update the root state machine.
      */
     private update(): void {
         this.root.update();
-        for (const mind of this.nestedHives) {
-            for (const stateName in mind.runningStates) {
-                for (const state of mind.runningStates[stateName]) {
-                    if (!this.activeBots.includes(state.bot)) this.activeBots.push(state.bot);
-                }
-            }
-        }
     }
 
 
@@ -148,7 +101,6 @@ export class CentralHiveMind extends EventEmitter {
             const bot = this.bots[i]
             if (!bot) return;
             //if (!exclusive) this.bots.push(bot)
-            hivemind.bots.push(bot);
         }
     }
 }
