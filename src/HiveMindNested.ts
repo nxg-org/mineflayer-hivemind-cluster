@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 import { Bot } from "mineflayer";
-import { HiveBehavior, HiveTransition } from "./HiveMindStates";
+import { HiveSubbehavior, HiveTransition } from "./HiveMindStates";
 import { ChildProcess, Serializable } from "child_process";
 import { HostToWorkerDataFormat, WorkerToHostDataFormat } from "./types";
 
@@ -8,8 +8,8 @@ export interface NestedHiveMindOptions {
     stateName: string;
     processes: ChildProcess[];
     transitions: HiveTransition[];
-    enter: typeof HiveBehavior;
-    exit?: typeof HiveBehavior;
+    enter: typeof HiveSubbehavior;
+    exit?: typeof HiveSubbehavior;
     autonomous: boolean;
     ignoreBusy: boolean;
 }
@@ -20,12 +20,11 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
     readonly stateName: string;
     readonly processes: ChildProcess[];
     readonly transitions: HiveTransition[];
-    readonly states: typeof HiveBehavior[];
-    readonly enter: typeof HiveBehavior;
-    readonly exit?: typeof HiveBehavior;
+    readonly states: typeof HiveSubbehavior[];
+    readonly enter: typeof HiveSubbehavior;
+    readonly exit?: typeof HiveSubbehavior;
     readonly runningStates: { [behaviorName: string]: ChildProcess[] };
-    private checking: { [index: number]: boolean };
-    activeStateType?: typeof HiveBehavior;
+    activeStateType?: typeof HiveSubbehavior;
     active: boolean;
     depth: number;
 
@@ -50,7 +49,6 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         this.runningStates = {};
         this.active = false;
         this.depth = 0;
-        this.checking = {};
 
         this.processes.forEach((p) => {
             p.on("message", (data) => {
@@ -91,7 +89,7 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
     //     this.checking[index] = true;
     // }
 
-    private findStates(): typeof HiveBehavior[] {
+    private findStates(): typeof HiveSubbehavior[] {
         const states = [];
         states.push(this.enter);
 
@@ -120,7 +118,7 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         let fuck = 0;
         for (const process of this.processes) {
             for (const state in this.runningStates) {
-                if (this.activeStateType?.stateName === state || this.runningStates[state].includes(process)) {
+                if (this.activeStateType?.substateName === state || this.runningStates[state].includes(process)) {
                     fuck++;
                     break;
                 }
@@ -131,12 +129,12 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         return this.processes;
     }
 
-    private setStatesInactive(stateType: typeof HiveBehavior): void {
+    private setStatesInactive(stateType: typeof HiveSubbehavior): void {
         const processes = this.runningStates[stateType.name];
         processes.forEach((p) => p.send({ subject: "disableState" } as HostToWorkerDataFormat));
     }
 
-    private enterStates(enterState: typeof HiveBehavior, ...processes: ChildProcess[]): void {
+    private enterStates(enterState: typeof HiveSubbehavior, ...processes: ChildProcess[]): void {
         processes.forEach((p) =>
             p.send({ subject: "enterState", body: { kind: "stateInfo", data: enterState.name } } as HostToWorkerDataFormat)
         ); //should I use stateName? dunno
@@ -144,7 +142,7 @@ export class NestedHiveMind extends EventEmitter implements NestedHiveMindOption
         this.emit("stateChanged");
     }
 
-    private exitStates(exitState: typeof HiveBehavior): void {
+    private exitStates(exitState: typeof HiveSubbehavior): void {
         if (exitState.autonomous) return;
         const processes = this.runningStates[exitState.name];
         processes.forEach((p) => p.send({ subject: "exitState" } as HostToWorkerDataFormat)); //should I use stateName? dunno

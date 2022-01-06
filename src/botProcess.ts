@@ -66,28 +66,6 @@ process.on("message", async (message) => {
                 waitingToBeStopped[stateType.name] = false;
             }
             break;
-
-        // case "evalTransition":
-        //     if (msg.body?.kind === "transitionInfo") {
-        //         if (transitionString !== (msg.body.data as any).function) {
-        //             transitionString = (msg.body.data as any).function;
-        //             transition = (msg.body.data as any).function;
-
-        //             const res = await eval("function anon(){return (" + transitionString + ")(bot)};");
-        //             process.send!({
-        //                 subject: "transitionEvaluated",
-        //                 body: {
-        //                     kind: "transitionEvaluation",
-        //                     data: {
-        //                         parentName: (msg.body.data as any).parentName,
-        //                         childName: (msg.body.data as any).childName,
-        //                         result: res,
-        //                     },
-        //                 },
-        //             } as WorkerToHostDataFormat);
-        //         }
-        //     }
-        //     break;
         default:
             console.log("hi", msg);
             break;

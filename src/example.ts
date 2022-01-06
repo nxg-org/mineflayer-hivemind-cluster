@@ -21,12 +21,12 @@ const { signal } = controller;
 
 const leader = createBot({ username: `test_gen0`, host: "localhost", version: "1.17.1" });
 
-for (let i = 1; i <= cpu.cpus().length - 4; i++) {
+for (let i = 1; i <= 8; i++) {
     const child = fork(path.join(path.dirname(__filename), "botProcess.js"), { signal });
     processes.push(child);
     child.send({
         subject: "createBot",
-        body: { kind: "botInfo" as HostToWorkerBodyTypes, data: { username: `test_gen${i}`, host: "localhost", version: "1.17.1" } },
+        body: { kind: "botInfo", data: { username: `test_gen${i}`, host: "localhost", version: "1.17.1" } },
     } as HostToWorkerDataFormat);
 }
 
@@ -146,7 +146,7 @@ leader.on("chat", (username, message: string) => {
             hiveMind!.root.transitions[3].trigger();
             break;
         default:
-            hiveMind!.root.transitions.find(t => t.name === split[0])?.trigger();
+            hiveMind!.root.transitions.find((t) => t.name === split[0])?.trigger();
             break;
     }
 });
