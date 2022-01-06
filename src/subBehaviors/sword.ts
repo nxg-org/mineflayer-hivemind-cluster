@@ -1,14 +1,14 @@
 import { Bot } from "mineflayer";
 import { Entity } from "prismarine-entity";
-import { HiveBehavior } from "../HiveMindStates";
+import { HiveSubbehavior } from "../HiveMindStates";
 import { goals, Movements } from "mineflayer-pathfinder";
 import md from "minecraft-data";
 
 /**
  * The bot will look at the target entity.
  */
-export class BehaviorBowEntity extends HiveBehavior {
-    static stateName: string = "bowEntity";
+export class BehaviorSwordEntity extends HiveSubbehavior {
+    static stateName: string = "swordEntity";
     movements?: Movements;
     active: boolean = false;
     target?: Entity;
@@ -22,7 +22,8 @@ export class BehaviorBowEntity extends HiveBehavior {
         if (!this.target) return;
         const mcData = md(this.bot.version);
         this.movements = new Movements(this.bot, mcData);
-        this.bot.bowpvp.attack(this.target);
+        this.bot.swordpvp.critConfig.mode = "packet";
+        this.bot.swordpvp.attack(this.target);
         const pathfinder = this.bot.pathfinder;
         const goal = new goals.GoalFollow(this.target, 2);
         if (this.movements) pathfinder.setMovements(this.movements);
@@ -32,7 +33,7 @@ export class BehaviorBowEntity extends HiveBehavior {
     update(): void {
         this.target = this.bot.nearestEntity((e) => e.type === "player" && !e.username?.includes("test")) ?? undefined;
         if (!this.target) return;
-        this.bot.bowpvp.attack(this.target);
+        this.bot.swordpvp.attack(this.target);
         if (!this.bot.pathfinder.isMoving()) {
             const pathfinder = this.bot.pathfinder;
             const goal = new goals.GoalFollow(this.target, 2);
@@ -41,7 +42,7 @@ export class BehaviorBowEntity extends HiveBehavior {
     }
 
     onStateExited(): void {
-        this.bot.bowpvp.stop()
+        this.bot.swordpvp.stop()
         this.bot.pathfinder.stop()
     }
 

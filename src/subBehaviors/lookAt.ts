@@ -1,17 +1,21 @@
 import { Bot } from "mineflayer";
 import { Entity } from "prismarine-entity";
-import { HiveBehavior } from "../HiveMindStates";
+import { HiveSubbehavior } from "../HiveMindStates";
 
 /**
  * The bot will look at the target entity.
  */
-export class BehaviorLookAtEntity extends HiveBehavior {
+export class BehaviorLookAtEntity extends HiveSubbehavior {
     static stateName: string = "lookAtEntity";
     active: boolean = false;
     target?: Entity;
 
+
     constructor(bot: Bot) {
         super(bot);
+    }
+
+    onStateEntered(): void {
         this.target = this.bot.nearestEntity((e) => e.username === "Generel_Schwerz") ?? undefined;
     }
 

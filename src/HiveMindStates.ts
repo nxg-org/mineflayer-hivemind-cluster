@@ -1,12 +1,15 @@
 import { Bot } from "mineflayer";
+import { EventEmitter } from "stream";
 
-export class HiveSubbehavior {
+export class HiveSubbehavior extends EventEmitter {
     /**
      * The name of this behavior state.
      */
     static substateName: string = "defaultName";
     static autonomous: boolean = false;
+    private context: any;
     readonly bot: Bot;
+
     /**
      * Gets whether or not this state is currently active.
      */
@@ -15,7 +18,9 @@ export class HiveSubbehavior {
     /**
      * Called when the bot enters this behavior state.
      */
-    onStateEntered?(): void {}
+    onStateEntered?(context: any): void {
+        this.context = context
+    }
 
     /**
      * Called each tick to update this behavior.
@@ -35,22 +40,30 @@ export class HiveSubbehavior {
     }
 
     constructor(bot: Bot) {
+        super();
         this.bot = bot;
     }
 }
 
 
-export class HiveBehavior {
+export class HiveBehavior extends EventEmitter {
     static stateName: string = "defaultName";
 
     public bots: Bot[];
+    public subBehaviors: HiveSubbehavior[]
+    public context: any;
 
-    constructor() {
-        this.bots = [];
+    constructor(subBehavior: typeof HiveSubbehavior, ...bots: Bot[]) {
+        super();
+        this.bots = bots
+        this.subBehaviors = this.bots.map(b => new subBehavior(b))
+   
     }
 
 
-    onStateEntered?(): void {}
+    onStateEntered?(context: any): void {
+        this.context = context
+    }
 
     /**
      * Called each tick to update this behavior.
@@ -79,6 +92,7 @@ export class HiveBehavior {
 export interface HiveTransitionParameters {
     parent: typeof HiveSubbehavior;
     child: typeof HiveSubbehavior;
+    bot: Bot,
     transitionName?: string;
     shouldTransition?: () => boolean;
     onTransition?: () => void;
@@ -89,17 +103,19 @@ export interface HiveTransitionParameters {
  * to another state (the child).
  */
 export class HiveTransition {
-    readonly parentState: typeof HiveSubbehavior;
-    readonly childState: typeof HiveSubbehavior;
+    readonly parentState: HiveSubbehavior;
+    readonly childState: HiveSubbehavior;
     readonly shouldTransitionStringified: string
+    readonly bot: Bot;
     private triggerState: boolean = false;
     shouldTransition: () => boolean;
     onTransition: () => void;
     transitionName?: string;
 
-    constructor({ parent, child, transitionName: name, shouldTransition = () => false, onTransition = () => {} }: HiveTransitionParameters) {
-        this.parentState = parent;
-        this.childState = child;
+    constructor({ parent, child, bot, transitionName: name, shouldTransition = () => false, onTransition = () => {} }: HiveTransitionParameters) {
+        this.parentState = new parent(bot);
+        this.childState = new parent(bot);
+        this.bot = bot
         this.shouldTransitionStringified = shouldTransition.toString();
         this.shouldTransition = shouldTransition;
         this.onTransition = onTransition;
