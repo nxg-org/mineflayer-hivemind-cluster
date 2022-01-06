@@ -1,14 +1,12 @@
 import { Bot } from "mineflayer";
-import { HiveSubbehavior } from "../HiveMindStates";
+import { HiveBehavior } from "../HiveMindStates";
 
 /**
  * The bot will stand idle and do... nothing.
  */
-export class BehaviorIdle extends HiveSubbehavior {
+export class BehaviorIdle extends HiveBehavior {
     static stateName: string = "idle";
-
-    bots: Bot[] = [];
-
+    
     constructor(bot: Bot) {
         super(bot);
     }

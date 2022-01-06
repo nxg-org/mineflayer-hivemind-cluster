@@ -13,7 +13,7 @@ export class CircleEntity extends HiveBehavior {
 
         for (const sub of this.subBehaviors) {
             sub.on("exitCaseMet", () => {
-                this.remove(sub);
+                this.handler(sub);
                 this.emit("subBehaviorFinished", sub.bot)
             });
         }
@@ -43,7 +43,7 @@ export class CircleEntity extends HiveBehavior {
         return;
     };
 
-    remove = (sub: HiveSubbehavior) => {
+    handler = (sub: HiveSubbehavior) => {
         const index = this.subBehaviors.indexOf(sub);
         if (index > -1) this.subBehaviors.splice(index, 1)[0].onStateExited?.();
     };

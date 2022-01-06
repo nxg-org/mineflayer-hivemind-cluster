@@ -1,13 +1,12 @@
 import { Bot } from "mineflayer";
 import { EventEmitter } from "stream";
 
-export class HiveSubbehavior extends EventEmitter {
+export class HiveBehavior extends EventEmitter {
     /**
      * The name of this behavior state.
      */
     static substateName: string = "defaultName";
     static autonomous: boolean = false;
-    private context: any;
     readonly bot: Bot;
 
     /**
@@ -18,9 +17,7 @@ export class HiveSubbehavior extends EventEmitter {
     /**
      * Called when the bot enters this behavior state.
      */
-    onStateEntered?(context: any): void {
-        this.context = context
-    }
+    onStateEntered?(context: any): void {}
 
     /**
      * Called each tick to update this behavior.
@@ -46,14 +43,14 @@ export class HiveSubbehavior extends EventEmitter {
 }
 
 
-export class HiveBehavior extends EventEmitter {
+export class WIPBehavior extends EventEmitter {
     static stateName: string = "defaultName";
 
     public bots: Bot[];
-    public subBehaviors: HiveSubbehavior[]
+    public subBehaviors: HiveBehavior[]
     public context: any;
 
-    constructor(subBehavior: typeof HiveSubbehavior, ...bots: Bot[]) {
+    constructor(subBehavior: typeof HiveBehavior, ...bots: Bot[]) {
         super();
         this.bots = bots
         this.subBehaviors = this.bots.map(b => new subBehavior(b))
@@ -90,8 +87,8 @@ export class HiveBehavior extends EventEmitter {
  * The parameters for initializing a state transition.
  */
 export interface HiveTransitionParameters {
-    parent: typeof HiveSubbehavior;
-    child: typeof HiveSubbehavior;
+    parent: typeof HiveBehavior;
+    child: typeof HiveBehavior;
     bot: Bot,
     transitionName?: string;
     shouldTransition?: () => boolean;
@@ -103,8 +100,8 @@ export interface HiveTransitionParameters {
  * to another state (the child).
  */
 export class HiveTransition {
-    readonly parentState: HiveSubbehavior;
-    readonly childState: HiveSubbehavior;
+    readonly parentState: HiveBehavior;
+    readonly childState: HiveBehavior;
     readonly shouldTransitionStringified: string
     readonly bot: Bot;
     private triggerState: boolean = false;
