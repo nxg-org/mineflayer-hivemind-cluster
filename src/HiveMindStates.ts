@@ -102,7 +102,6 @@ export interface HiveTransitionParameters {
 export class HiveTransition {
     readonly parentState: HiveBehavior;
     readonly childState: HiveBehavior;
-    readonly shouldTransitionStringified: string
     readonly bot: Bot;
     private triggerState: boolean = false;
     shouldTransition: () => boolean;
@@ -113,7 +112,6 @@ export class HiveTransition {
         this.parentState = new parent(bot);
         this.childState = new child(bot);
         this.bot = bot
-        this.shouldTransitionStringified = shouldTransition.toString();
         this.shouldTransition = shouldTransition;
         this.onTransition = onTransition;
         this.transitionName = name;
@@ -121,9 +119,9 @@ export class HiveTransition {
 
     trigger(): void {
         // I may need to re-implement this later.
-        // if (!this.parentState.active) {
-        //     return;
-        // }
+        if (!this.parentState.active) {
+            return;
+        }
 
         this.triggerState = true;
     }

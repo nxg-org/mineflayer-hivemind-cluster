@@ -49,7 +49,6 @@ export class NestedHiveMind extends EventEmitter implements HiveBehavior {
         this.runningStates = {};
         this.active = false;
         this.depth = 0;
-
     }
 
     private loadTransitions(transitions: typeof HiveTransition[]): HiveTransition[] {
@@ -85,9 +84,11 @@ export class NestedHiveMind extends EventEmitter implements HiveBehavior {
     // }
 
     public onStateEntered(): void {
+
         this.activeState = this.enter;
         this.activeState.active = true
         this.activeState.onStateEntered?.();
+        this.bot.on("physicsTick", this.update)
         this.emit('stateChanged')
     }
 
@@ -96,6 +97,7 @@ export class NestedHiveMind extends EventEmitter implements HiveBehavior {
         this.activeState.active = false
         this.activeState.onStateExited?.()
         this.activeState = undefined
+        this.bot.removeListener("physicsTick", this.update)
     }
 
     public async update(): Promise<void> {

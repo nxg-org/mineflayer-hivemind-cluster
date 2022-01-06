@@ -6,7 +6,7 @@ export class TransitionIdleToSword extends HiveTransition {
     readonly transitionName = "idleToSword";
 
     
-    constructor(bot: Bot) {
+    constructor(bot: any) {
         super({ parent: BehaviorIdle, child: BehaviorSwordEntity, bot });
     }
 
@@ -17,4 +17,5 @@ export class TransitionIdleToSword extends HiveTransition {
     };
 }
 
-export default TransitionIdleToSword
+
+export default TransitionIdleToSword;

@@ -22,11 +22,12 @@ const { signal } = controller;
 const leader = createBot({ username: `test_gen0`, host: "localhost", version: "1.17.1" });
 
 for (let i = 1; i <= 8; i++) {
-    const child = fork(path.join(path.dirname(__filename), "botProcess.js"), { signal });
+    const child = fork(path.join(__dirname, "botProcess.js"), { signal });
     processes.push(child);
     child.send({
         subject: "createBot",
-        body: { kind: "botInfo", data: { username: `test_gen${i}`, host: "localhost", version: "1.17.1" } },
+        datatype: "botInfo",
+        data: { username: `test_gen${i}`, host: "localhost", version: "1.17.1" },
     } as HostToWorkerDataFormat);
 }
 
@@ -40,13 +41,11 @@ leader.on("physicsTick", () => {
     target = leader.nearestEntity((e) => e.type === "player" && !e.username?.includes("test")) as any;
 });
 
-
 import { loadAllMachineContext } from "./util";
 
-(async()=> {
-    console.log(await loadAllMachineContext())
+(async () => {
+    console.log(await loadAllMachineContext());
 })();
-
 
 // let childTransitions = [
 //     new HiveTransition({

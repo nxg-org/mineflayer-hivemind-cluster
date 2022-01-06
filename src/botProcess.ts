@@ -18,7 +18,7 @@ async function eventuallyHalt(name: string) {
         await bot.waitForTicks(1);
         state.update?.();
         if (state.exitCase?.()) {
-            process.send!({ subject: "stateEnded", body: { kind: "stateEndedInfo", data: name } } as WorkerToHostDataFormat);
+            process.send!({ subject: "stateEnded", datatype: "stateEndedInfo", data: name } as WorkerToHostDataFormat);
         }
     }
 }
@@ -33,8 +33,8 @@ process.on("message", async (message) => {
             break;
 
         case "createBot":
-            if (msg.body?.kind === "botInfo") {
-                bot = createBot(msg.body.data as BotOptions);
+            if (msg.datatype === "botInfo") {
+                bot = createBot(msg.data as BotOptions);
                 bot.loadPlugin(pathfinder);
                 bot.loadPlugin(customPVP);
                 bot.once("spawn", () => {
@@ -45,8 +45,8 @@ process.on("message", async (message) => {
             }
             break;
         case "enterState":
-            if (msg.body?.kind === "stateInfo") {
-                const found = behaviorsAsList.find((state) => state.name === msg.body!.data);
+            if (msg.datatype === "stateInfo") {
+                const found = behaviorsAsList.find((state) => state.name === msg.data);
                 if (!found) return;
                 state = new found(bot);
                 stateType = found;

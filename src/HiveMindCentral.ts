@@ -7,20 +7,20 @@ import { promisify } from "util";
 const sleep = promisify(setTimeout)
 
 export class CentralHiveMind extends EventEmitter {
-    readonly bots: ChildProcess[];
+    readonly processes: ChildProcess[];
 
     readonly activeBots: ChildProcess[]; //{[hivemindName: string]: Bot[]}
     readonly droppedBots: ChildProcess[];
 
-    readonly root: NestedHiveMind;
+    readonly root: typeof NestedHiveMind;
 
     readonly transitions: HiveTransition[];
     readonly states: HiveBehavior[];
     readonly nestedHives: NestedHiveMind[];
 
-    constructor(bots: ChildProcess[], root: typeof NestedHiveMind) {
+    constructor(processes: ChildProcess[], root: typeof NestedHiveMind) {
         super();
-        this.bots = bots;
+        this.processes = processes;
         this.root = root;
 
         this.states = [];
@@ -28,17 +28,15 @@ export class CentralHiveMind extends EventEmitter {
         this.nestedHives = [];
         this.activeBots = [];
         this.droppedBots = [];
-        this.findStatesRecursive(this.root);
-        this.findTransitionsRecursive(this.root);
-        this.findNestedHiveMinds(this.root);
+        // this.findStatesRecursive(this.root);
+        // this.findTransitionsRecursive(this.root);
+        // this.findNestedHiveMinds(this.root);
 
         //lazy right now. implementing later.
         // this.bots[0].on("physicsTick", () => this.update());
 
-        this.lazyHandler()
-
-        this.root.active = true;
-        this.root.onStateEntered();
+        // this.root.active = true;
+        // this.root.onStateEntered();
     }
 
 
@@ -47,7 +45,7 @@ export class CentralHiveMind extends EventEmitter {
         nested.depth = depth;
 
         nested.on("stateChanged", () => this.emit("stateChanged"));
-        nested.on("requestBots", this.provideBotsOnRequest)
+        // nested.on("requestBots", this.provideBotsOnRequest)
 
 
         for (const state of nested.states) {
@@ -80,27 +78,12 @@ export class CentralHiveMind extends EventEmitter {
     }
 
 
-    private async lazyHandler() {
-        while (true) {
-            this.update()
-            await sleep(50)
 
-        }
-    }
-
-    /**
-     * Called each tick to update the root state machine.
-     */
-    private update(): void {
-        this.root.update();
-    }
-
-
-    private provideBotsOnRequest = (hivemind: NestedHiveMind, amount: number, exclusive: boolean) => {
-        for (let i = 0; i < amount; i++) {
-            const bot = this.bots[i]
-            if (!bot) return;
-            //if (!exclusive) this.bots.push(bot)
-        }
-    }
+    // private provideBotsOnRequest = (hivemind: typeof NestedHiveMind, amount: number, exclusive: boolean) => {
+    //     for (let i = 0; i < amount; i++) {
+    //         const process = this.processes[i]
+    //         if (!process) return;
+    //         //if (!exclusive) this.bots.push(bot)
+    //     }
+    // }
 }
