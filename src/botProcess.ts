@@ -1,35 +1,21 @@
 import { Bot, BotOptions, createBot } from "mineflayer";
 import { HostToWorkerDataFormat, WorkerToHostDataFormat } from "./types";
-import { HiveBehavior } from "./HiveMindStates";
-import { behaviors, behaviorsAsList } from "./hiveInfo/behaviors";
+import { HiveBehavior, HiveTransition } from "./HiveMindStates";
+import { loadAllMachineContext } from "./util";
 import { pathfinder } from "mineflayer-pathfinder";
 import customPVP from "@nxg-org/mineflayer-custom-pvp";
+import { NestedStateMachine } from "mineflayer-statemachine";
 
 let bot: Bot;
-let state: HiveBehavior;
-let stateType: typeof HiveBehavior;
-let waitingToBeStopped: { [name: string]: boolean } = {};
-let transitionString: string;
-let transition: Function;
-//let behaviors: {[stateName: string]: typeof HiveBehavior};
-
-async function eventuallyHalt(name: string) {
-    while (waitingToBeStopped[name]) {
-        await bot.waitForTicks(1);
-        state.update?.();
-        if (state.exitCase?.()) {
-            process.send!({ subject: "stateEnded", datatype: "stateEndedInfo", data: name } as WorkerToHostDataFormat);
-        }
-    }
-}
+let stateMachine: NestedStateMachine;
+let info: {behaviors: typeof HiveBehavior[], transitions: typeof HiveTransition[], stateMachines: typeof NestedStateMachine[]} = {behaviors: [], transitions: [], stateMachines: []};
 
 process.on("message", async (message) => {
     const msg = message as HostToWorkerDataFormat;
     // console.log(msg)
     switch (msg.subject) {
         case "init":
-            console.log(msg);
-            console.log(behaviors);
+            info = await loadAllMachineContext();
             break;
 
         case "createBot":
@@ -44,30 +30,11 @@ process.on("message", async (message) => {
                 throw "we have a problem";
             }
             break;
-        case "enterState":
-            if (msg.datatype === "stateInfo") {
-                const found = behaviorsAsList.find((state) => state.name === msg.data);
-                if (!found) return;
-                state = new found(bot);
-                stateType = found;
-                state.active = true;
-                state.onStateEntered?.();
-                if (stateType.autonomous) {
-                    waitingToBeStopped[found.name] = true;
-                    eventuallyHalt(found.name);
-                }
+        case "enterRoot":
+            if (msg.datatype === "rootName") {
+                const type = info.stateMachines.find(i => i.name === msg.data)
+                console.log(type, info.stateMachines.map(i => i.name))
+                stateMachine = new (type as any)(bot)
             }
-            break;
-        case "exitState":
-            if (!state.active) return;
-            state.onStateExited?.();
-            state.active = false;
-            if (stateType.autonomous) {
-                waitingToBeStopped[stateType.name] = false;
-            }
-            break;
-        default:
-            console.log("hi", msg);
-            break;
     }
 });

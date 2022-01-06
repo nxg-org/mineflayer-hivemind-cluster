@@ -4,6 +4,7 @@ import { NestedHiveMind } from "./HiveMindNested";
 import { HiveBehavior, HiveTransition } from "./HiveMindStates";
 import { ChildProcess } from "child_process";
 import { promisify } from "util";
+import { HostToWorkerDataFormat, WorkerToHostDataFormat } from "./types";
 const sleep = promisify(setTimeout)
 
 export class CentralHiveMind extends EventEmitter {
@@ -28,6 +29,7 @@ export class CentralHiveMind extends EventEmitter {
         this.nestedHives = [];
         this.activeBots = [];
         this.droppedBots = [];
+        this.initProcesses()
         // this.findStatesRecursive(this.root);
         // this.findTransitionsRecursive(this.root);
         // this.findNestedHiveMinds(this.root);
@@ -37,6 +39,21 @@ export class CentralHiveMind extends EventEmitter {
 
         // this.root.active = true;
         // this.root.onStateEntered();
+    }
+
+
+    private initProcesses(): void {
+        this.processes.forEach(p => {
+            p.on("message", (message) => {
+                const msg = message as WorkerToHostDataFormat
+                switch (msg.subject) {
+                    case "botSpawned":
+                        p.send!({subject: "enterRoot", datatype: "rootName", data: this.root.name} as HostToWorkerDataFormat)
+                        break;
+
+                }
+            })
+        })
     }
 
 

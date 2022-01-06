@@ -1,51 +1,29 @@
-import { ChildProcess, fork } from "child_process";
-import path from "path";
-import { HostToWorkerBodyTypes, HostToWorkerDataFormat } from "./types";
 import cpu from "os";
 import { CentralHiveMind } from "./HiveMindCentral";
-import { HiveTransition } from "./HiveMindStates";
-import { BehaviorBowEntity, BehaviorFollowEntity, BehaviorIdle, BehaviorLookAtEntity, BehaviorSwordEntity } from "./hiveInfo/behaviors";
-import { NestedHiveMind } from "./HiveMindNested";
 import { promisify } from "util";
-import { createInterface } from "readline";
 import { Bot, createBot } from "mineflayer";
 import { Entity } from "prismarine-entity";
+import { createProcesses } from "./util";
 
 const sleep = promisify(setTimeout);
 
 const debug = true;
 
 const controller = new AbortController();
-const processes: ChildProcess[] = [];
 const { signal } = controller;
 
 const leader = createBot({ username: `test_gen0`, host: "localhost", version: "1.17.1" });
 
-for (let i = 1; i <= 8; i++) {
-    const child = fork(path.join(__dirname, "botProcess.js"), { signal });
-    processes.push(child);
-    child.send({
-        subject: "createBot",
-        datatype: "botInfo",
-        data: { username: `test_gen${i}`, host: "localhost", version: "1.17.1" },
-    } as HostToWorkerDataFormat);
-}
-
-let rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+const processes = createProcesses("test_gen", 8, { signal });
 
 let target: Entity | undefined;
 leader.on("physicsTick", () => {
     target = leader.nearestEntity((e) => e.type === "player" && !e.username?.includes("test")) as any;
 });
 
-import { loadAllMachineContext } from "./util";
+import RootStateMachine from "./hiveInfo/machines/root";
 
-(async () => {
-    console.log(await loadAllMachineContext());
-})();
+let centralMachine = new CentralHiveMind(processes, RootStateMachine as any);
 
 // let childTransitions = [
 //     new HiveTransition({

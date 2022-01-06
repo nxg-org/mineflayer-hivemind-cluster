@@ -1,5 +1,6 @@
 import path, { resolve } from "path";
 import { promises } from "fs";
+import { ChildProcess, fork, ForkOptions } from "child_process";
 const { readdir } = promises;
 
 async function* getFiles(dir: string): AsyncGenerator<string, void, unknown> {
@@ -12,6 +13,25 @@ async function* getFiles(dir: string): AsyncGenerator<string, void, unknown> {
             yield res;
         }
     }
+}
+
+export function createProcesses(name: string, number: number, signal?: ForkOptions): ChildProcess[] {
+    const processes = []
+    for (let i = 0; i < number; i++) {
+        const child = fork(path.join(__dirname, "botProcess.js"), signal);
+        processes.push(child);
+        child.send({
+            subject: "init"
+        })
+        child.send({
+            subject: "createBot",
+            datatype: "botInfo",
+            data: { username: `name_${i}`, host: "localhost", version: "1.17.1" },
+        });
+    }
+
+    return processes
+
 }
 
 export async function loadAllMachineContext() {
