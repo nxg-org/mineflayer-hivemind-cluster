@@ -7,11 +7,11 @@ import { HostToWorkerDataFormat, WorkerToHostDataFormat } from "./types";
 export interface NestedHiveMindOptions {
     bot: Bot,
     stateName: string;
-    transitions: typeof HiveTransition[];
+    transitions: any[];
     enter: typeof HiveBehavior;
     exit?: typeof HiveBehavior;
-    autonomous: boolean;
-    ignoreBusy: boolean;
+    autonomous?: boolean;
+    ignoreBusy?: boolean;
 }
 
 export class NestedHiveMind extends EventEmitter implements HiveBehavior {
@@ -80,75 +80,46 @@ export class NestedHiveMind extends EventEmitter implements HiveBehavior {
         return states;
     }
 
-    private setStatesInactive(stateType: typeof HiveBehavior): void {
-        const processes = this.runningStates[stateType.name];
-        processes.forEach((p) => p.send({ subject: "disableState" } as HostToWorkerDataFormat));
-    }
-
-    private enterStates(enterState: typeof HiveBehavior, ...processes: ChildProcess[]): void {
-        processes.forEach((p) =>
-            p.send({ subject: "enterState", body: { kind: "stateInfo", data: enterState.name } } as HostToWorkerDataFormat)
-        ); //should I use stateName? dunno
-        this.runningStates[enterState.name] = processes;
-        this.emit("stateChanged");
-    }
-
-    private exitStates(exitState: typeof HiveBehavior): void {
-        if (exitState.autonomous) return;
-        const processes = this.runningStates[exitState.name];
-        processes.forEach((p) => p.send({ subject: "exitState" } as HostToWorkerDataFormat)); //should I use stateName? dunno
-        this.runningStates[exitState.name] = [];
-        this.emit("stateChanged");
-    }
-
-    private stateEndedHandler = async (process: ChildProcess, msg: Serializable) => {
-        const transition = this.transitions.find((t) => t.parentState.name === msg);
-        if (!transition) throw "fuck";
-        // console.log(this.activeStateType?.name, msg, transition.isTriggered());
-        if (this.activeState?.name === msg && !transition.isTriggered()) return;
-        const processes = this.runningStates[msg as string];
-        if (!processes) throw "Invalid state.";
-        const index = processes.indexOf(process);
-        if (index > -1) this.runningStates[msg as string].splice(index, 1)[0].send({ subject: "exitState" } as HostToWorkerDataFormat);
-    };
-
     // private async checkActiveTransition(transition: HiveTransition) {
     //     await Promise.all(this.processes.map(async (p) => await this.processTransition(p, transition)));
     // }
 
     public onStateEntered(): void {
         this.activeState = this.enter;
-        this.state
+        this.activeState.active = true
+        this.activeState.onStateEntered?.();
+        this.emit('stateChanged')
     }
 
     public onStateExited(): void {
         if (this.activeState == null) return;
-        this.exitStates(this.activeState);
-        this.activeState = undefined;
+        this.activeState.active = false
+        this.activeState.onStateExited?.()
+        this.activeState = undefined
     }
 
     public async update(): Promise<void> {
-        for (let i = 0; i < this.transitions.length; i++) {
-            const transition = this.transitions[i];
-            if (transition.parentState === this.activeState) {
-                // await this.checkActiveTransition(transition);
-                if (transition.isTriggered() || transition.shouldTransition()) {
-                    transition.resetTrigger();
+        this.activeState?.update?.()
 
-                    if (transition.parentState.autonomous) {
-                        transition.onTransition();
-                        this.activeState = transition.childState;
-                    } else {
-                        this.setStatesInactive(transition.parentState);
-                        this.exitStates(transition.parentState);
-                        transition.onTransition();
-                        const bots = this.getUsableBots();
-                        this.activeState = transition.childState;
-                        this.enterStates(this.activeState, ...bots);
-                    }
-                    return;
-                }
+        for (let i = 0; i < this.transitions.length; i++) {
+          const transition = this.transitions[i]
+          if (transition.parentState === this.activeState) {
+            if (transition.isTriggered() || transition.shouldTransition()) {
+              transition.resetTrigger()
+    
+              this.activeState.active = false
+              this.activeState.onStateExited?.()
+    
+              transition.onTransition()
+              this.activeState = transition.childState
+              this.activeState.active = true
+              this.emit('stateChanged')
+    
+              this.activeState.onStateEntered?.()
+    
+              return
             }
+          }
         }
     }
 

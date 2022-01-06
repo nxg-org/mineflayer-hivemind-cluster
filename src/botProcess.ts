@@ -1,7 +1,7 @@
 import { Bot, BotOptions, createBot } from "mineflayer";
 import { HostToWorkerDataFormat, WorkerToHostDataFormat } from "./types";
 import { HiveBehavior } from "./HiveMindStates";
-import { behaviors, behaviorsAsList } from "./behaviors";
+import { behaviors, behaviorsAsList } from "./hiveInfo/behaviors";
 import { pathfinder } from "mineflayer-pathfinder";
 import customPVP from "@nxg-org/mineflayer-custom-pvp";
 

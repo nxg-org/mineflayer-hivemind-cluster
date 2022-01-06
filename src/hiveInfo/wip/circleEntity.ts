@@ -1,11 +1,11 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { HiveBehavior, HiveSubbehavior } from "../HiveMindStates";
-import { BehaviorSwordEntity } from "../subBehaviors";
+import { WIPBehavior, HiveBehavior } from "../../HiveMindStates";
+import { BehaviorSwordEntity } from "../behaviors";
 import { MathUtils } from "@nxg-org/mineflayer-util-plugin";
 const { yawPitchAndSpeedToDir, toRadians } = MathUtils;
 
-export class CircleEntity extends HiveBehavior {
+export class CircleEntity extends WIPBehavior {
     private targetPos?: Vec3;
 
     constructor(...bots: Bot[]) {
@@ -35,7 +35,7 @@ export class CircleEntity extends HiveBehavior {
 
         for (let i = 0; i < this.subBehaviors.length; i++) {
             const sub = this.subBehaviors[i];
-            sub.onStateEntered?.(offsets[i]);
+            sub.onStateEntered?.();
         }
     };
 
@@ -43,8 +43,11 @@ export class CircleEntity extends HiveBehavior {
         return;
     };
 
-    handler = (sub: HiveSubbehavior) => {
+    handler = (sub: HiveBehavior) => {
         const index = this.subBehaviors.indexOf(sub);
         if (index > -1) this.subBehaviors.splice(index, 1)[0].onStateExited?.();
     };
 }
+
+
+export default CircleEntity

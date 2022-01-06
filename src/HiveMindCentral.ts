@@ -15,10 +15,10 @@ export class CentralHiveMind extends EventEmitter {
     readonly root: NestedHiveMind;
 
     readonly transitions: HiveTransition[];
-    readonly states: typeof HiveBehavior[];
+    readonly states: HiveBehavior[];
     readonly nestedHives: NestedHiveMind[];
 
-    constructor(bots: ChildProcess[], root: NestedHiveMind) {
+    constructor(bots: ChildProcess[], root: typeof NestedHiveMind) {
         super();
         this.bots = bots;
         this.root = root;

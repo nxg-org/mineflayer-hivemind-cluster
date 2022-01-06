@@ -2,7 +2,7 @@ import { Bot } from "mineflayer";
 import { Entity } from "prismarine-entity";
 import { Movements, goals } from "mineflayer-pathfinder";
 import mcDataLoader from "minecraft-data";
-import { HiveBehavior } from "../HiveMindStates";
+import { HiveBehavior } from "../../HiveMindStates";
 
 /**
  * Causes the bot to follow the target entity.
@@ -10,8 +10,8 @@ import { HiveBehavior } from "../HiveMindStates";
  * This behavior relies on the mineflayer-pathfinding plugin to be installed.
  */
 export class BehaviorFollowEntity extends HiveBehavior {
-    static stateName: string = "followEntity";
-    static autonomous: boolean = true;
+    stateName: string = "followEntity";
+    autonomous: boolean = true;
     movements?: Movements;
     target?: Entity;
     followDistance: number = 0;
@@ -75,3 +75,5 @@ export class BehaviorFollowEntity extends HiveBehavior {
         return this.bot.entity.position.distanceTo(this.target.position);
     }
 }
+
+export default BehaviorFollowEntity

@@ -5,8 +5,8 @@ export class HiveBehavior extends EventEmitter {
     /**
      * The name of this behavior state.
      */
-    static substateName: string = "defaultName";
-    static autonomous: boolean = false;
+    stateName: string = "defaultName";
+    autonomous: boolean = false;
     readonly bot: Bot;
 
     /**
@@ -17,7 +17,7 @@ export class HiveBehavior extends EventEmitter {
     /**
      * Called when the bot enters this behavior state.
      */
-    onStateEntered?(context: any): void {}
+    onStateEntered?(): void {}
 
     /**
      * Called each tick to update this behavior.
@@ -109,9 +109,9 @@ export class HiveTransition {
     onTransition: () => void;
     transitionName?: string;
 
-    constructor({ parent, child, bot, transitionName: name, shouldTransition = () => false, onTransition = () => {} }: HiveTransitionParameters) {
+    constructor({ bot, parent, child, transitionName: name, shouldTransition = () => false, onTransition = () => {} }: HiveTransitionParameters) {
         this.parentState = new parent(bot);
-        this.childState = new parent(bot);
+        this.childState = new child(bot);
         this.bot = bot
         this.shouldTransitionStringified = shouldTransition.toString();
         this.shouldTransition = shouldTransition;

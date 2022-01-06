@@ -1,12 +1,12 @@
 import { Bot } from "mineflayer";
 import { Entity } from "prismarine-entity";
-import { HiveSubbehavior } from "../HiveMindStates";
+import { HiveBehavior } from "../../HiveMindStates";
 
 /**
  * The bot will look at the target entity.
  */
-export class BehaviorLookAtEntity extends HiveSubbehavior {
-    static stateName: string = "lookAtEntity";
+export class BehaviorLookAtEntity extends HiveBehavior {
+    stateName: string = "lookAtEntity";
     active: boolean = false;
     target?: Entity;
 
@@ -40,3 +40,6 @@ export class BehaviorLookAtEntity extends HiveSubbehavior {
         return this.bot.entity.position.distanceTo(entity.position);
     }
 }
+
+
+export default BehaviorLookAtEntity
