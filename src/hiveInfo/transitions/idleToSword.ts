@@ -13,7 +13,7 @@ export class TransitionIdleToSword extends HiveTransition {
     onTransition = () => {};
 
     shouldTransition = () => {
-        return false;
+        return !!this.bot.nearestEntity(e => !e.username?.includes("test") && e.type === "player")
     };
 }
 

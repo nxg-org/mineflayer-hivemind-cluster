@@ -35,6 +35,8 @@ process.on("message", async (message) => {
                 const type = info.stateMachines.find(i => i.name === msg.data)
                 console.log(type, info.stateMachines.map(i => i.name))
                 stateMachine = new (type as any)(bot)
+                stateMachine.active = true
+                stateMachine.onStateEntered?.()
             }
     }
 });

@@ -100,14 +100,15 @@ export class NestedHiveMind extends EventEmitter implements HiveBehavior {
         this.bot.removeListener("physicsTick", this.update)
     }
 
-    public async update(): Promise<void> {
+    public update = async () => {
         this.activeState?.update?.()
 
         for (let i = 0; i < this.transitions.length; i++) {
           const transition = this.transitions[i]
-          if (transition.parentState === this.activeState) {
+          if (transition.parentState.stateName === this.activeState?.stateName) {
             if (transition.isTriggered() || transition.shouldTransition()) {
               transition.resetTrigger()
+              console.log("switch to", transition.childState.stateName)
     
               this.activeState.active = false
               this.activeState.onStateExited?.()

@@ -17,7 +17,7 @@ async function* getFiles(dir: string): AsyncGenerator<string, void, unknown> {
 
 export function createProcesses(name: string, number: number, signal?: ForkOptions): ChildProcess[] {
     const processes = []
-    for (let i = 0; i < number; i++) {
+    for (let i = 1; i <= number; i++) {
         const child = fork(path.join(__dirname, "botProcess.js"), signal);
         processes.push(child);
         child.send({
@@ -26,7 +26,7 @@ export function createProcesses(name: string, number: number, signal?: ForkOptio
         child.send({
             subject: "createBot",
             datatype: "botInfo",
-            data: { username: `name_${i}`, host: "localhost", version: "1.17.1" },
+            data: { username: `${name}${i}`, host: "localhost", version: "1.17.1" },
         });
     }
 

@@ -3,7 +3,7 @@ import { BehaviorIdle, BehaviorSwordEntity } from "../behaviors";
 import { HiveTransition } from "../../HiveMindStates";
 
 export class TransitionSwordToIdle extends HiveTransition {
-    readonly transitionName = "swordToIdle";
+    readonly transitionName = "bowToIdle";
 
 
     constructor(bot: Bot) {
@@ -13,7 +13,7 @@ export class TransitionSwordToIdle extends HiveTransition {
     onTransition = () => {};
 
     shouldTransition = () => {
-        return !this.bot.swordpvp.target
+        return !this.bot.bowpvp.target
     };
 }
 

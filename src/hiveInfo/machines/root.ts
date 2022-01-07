@@ -1,8 +1,10 @@
 import { Bot } from "mineflayer";
 import { NestedHiveMind } from "../../HiveMindNested";
 import { HiveTransition } from "../../HiveMindStates";
-import { BehaviorIdle } from "../behaviors";
+import { BehaviorIdle, BehaviorSwordEntity } from "../behaviors";
 import { TransitionIdleToSword, TransitionSwordToIdle } from "../transitions";
+import TransitionBowToSword from "../transitions/bowToSword";
+import { TransitionSwordToBow } from "../transitions/swordToBow";
 
 
 export class RootStateMachine extends NestedHiveMind {
@@ -11,7 +13,7 @@ export class RootStateMachine extends NestedHiveMind {
     autonomous = true
 
     constructor(bot: Bot) {
-        super({bot, enter: BehaviorIdle, stateName: "root", transitions: [TransitionIdleToSword, TransitionSwordToIdle] });
+        super({bot, enter: BehaviorSwordEntity, stateName: "root", transitions: [TransitionIdleToSword, TransitionSwordToIdle, TransitionSwordToBow, TransitionBowToSword] });
     }
 }
 
